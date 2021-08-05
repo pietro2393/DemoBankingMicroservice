@@ -12,5 +12,7 @@ public class DemoBankingMicroserviceApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(DemoBankingMicroserviceApplication.class, args);
 	}
+	
+	
 
 }

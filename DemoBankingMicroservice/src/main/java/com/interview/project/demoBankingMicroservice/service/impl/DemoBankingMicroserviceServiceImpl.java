@@ -1,11 +1,12 @@
 package com.interview.project.demoBankingMicroservice.service.impl;
 
 import java.util.List;
-import java.util.TimeZone;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -15,8 +16,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import com.interview.project.demoBankingMicroservice.bean.Creditor;
 import com.interview.project.demoBankingMicroservice.bean.Transaction;
 import com.interview.project.demoBankingMicroservice.bean.TransactionsListModel;
+import com.interview.project.demoBankingMicroservice.bean.external.MoneyTransferRequest;
 import com.interview.project.demoBankingMicroservice.bean.external.PayloadBalance;
 import com.interview.project.demoBankingMicroservice.bean.external.PayloadTransactionList;
 import com.interview.project.demoBankingMicroservice.bean.external.ResponseCallBalance;
@@ -44,7 +47,8 @@ public class DemoBankingMicroserviceServiceImpl implements DemoBankingMicroservi
 	
 	private Logger logger = LoggerFactory.getLogger(DemoBankingMicroserviceServiceImpl.class);
 	
-	private RestTemplate restTemplate = new RestTemplate();
+	@Autowired
+	private RestTemplate restTemplate;
 	
 	@Override
 	public Double getBalance() throws DemoBankingGenericException {
@@ -73,8 +77,6 @@ public class DemoBankingMicroserviceServiceImpl implements DemoBankingMicroservi
 		}
 		
 	}
-	
-	
 
 	@Override
 	public TransactionsListModel getTransactionList(String fromDate, String toDate) throws DemoBankingGenericException {
@@ -111,35 +113,26 @@ public class DemoBankingMicroserviceServiceImpl implements DemoBankingMicroservi
 	@Override
 	public String createMoneyTransfer(MoneyTransferRequestDTO moneyTransferRequestDTO) throws CreditTransferException {
 		
-//		try {
-//			
-//			HttpHeaders headers = createHeaders();
-//			headers.set("X-Time-Zone", "Europe/Rome");
-//			
-//			HttpEntity<Object> request = new HttpEntity<>(headers);
-//			ResponseEntity<ResponseCallMoneyTransfer> response = restTemplate.exchange(apiBaseUrl + "/api/gbs/banking/v4.0/accounts/" + accountID + "/transactions?fromAccountingDate=" + fromDate + "&toAccountingDate=" + toDate,
-//					HttpMethod.GET,
-//					request,
-//					ResponseCallTranscationList.class);
-//			
-//		}catch(HttpClientErrorException ex) {
-//			//logger.error
-//			throw new CreditTransferException(ErrorMessage.GENERIC_ERROR);
-//		}
+		logger.info("Start DemoBankingMicroserviceServiceImpl createMoneyTransfer moneyTransferRequestDTO {}", moneyTransferRequestDTO);
 		
-		return null;
+		try {
+			
+			HttpEntity<Object> request = createRequestMoneyTransfer(moneyTransferRequestDTO);
+			
+			ResponseEntity<String> response = restTemplate.exchange(apiBaseUrl + "/api/gbs/banking/v4.0/accounts/" + accountID + "/payments/money-transfers",
+					HttpMethod.POST,
+					request,
+					String.class);
+			
+			return response.getBody();
+			
+		}catch(Exception ex) {
+			logger.error("Error in DemoBankingMicroserviceServiceImpl createMoneyTransfer : " + ex);
+			throw new CreditTransferException(ErrorMessage.ERROR_MONEY_TRANSFER);
+		}
 		
 	}
 	
-//	String responseString = ex.getResponseBodyAsString();
-//	ObjectMapper mapper = new ObjectMapper();
-//
-//		try {
-//			Error errorResult = mapper.readValue(responseString, Error.class);
-//		} catch (JsonProcessingException e) {
-//			throw new DemoBankingException("KO", ErrorMessage.INTERNAL_SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
-//		}
-
 	private HttpHeaders createHeaders() {
 		
 		HttpHeaders headers = new HttpHeaders();
@@ -151,8 +144,29 @@ public class DemoBankingMicroserviceServiceImpl implements DemoBankingMicroservi
 		
 	}
 
-
-
+	private HttpEntity<Object> createRequestMoneyTransfer(MoneyTransferRequestDTO moneyTransferRequestDTO){
+		
+		HttpHeaders headers = createHeaders();
+		MoneyTransferRequest moneyTransferRequest = new MoneyTransferRequest();
+		moneyTransferRequest.setAmount(moneyTransferRequestDTO.getAmount());
+		moneyTransferRequest.setDescription(moneyTransferRequestDTO.getDescription());
+		moneyTransferRequest.setCurrency(moneyTransferRequestDTO.getCurrency());
+		moneyTransferRequest.setExecutionDate(moneyTransferRequestDTO.getExecutionDate());
+		Creditor creditor = new Creditor();
+		creditor.setName(moneyTransferRequestDTO.getReceiverName());
+		moneyTransferRequest.setCreditor(creditor);
+		moneyTransferRequest.setFeeAccountId(accountID);
+		
+		HttpEntity<Object> request = new HttpEntity<>(moneyTransferRequest.toString(), headers);	
+		
+		return request;
+	}
+	
+	
+	@Bean
+	public RestTemplate restTemplate() {
+	    return new RestTemplate();
+	}
 	
 		
 }

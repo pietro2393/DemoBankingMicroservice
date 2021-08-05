@@ -95,7 +95,7 @@ public class DemoBankingMicroserviceController {
 	}
 	
 	@PostMapping("/createMoneyTransfer")
-	@ApiOperation(value = "Find Transactions List", notes = "Retrieving transactions list")
+	@ApiOperation(value = "Create money Transfer", notes = "Create Money Transfer")
 	@ApiResponses(value = {
 	        @ApiResponse(code = 201, message = "Created"),
 	        @ApiResponse(code = 400, message = "Bad Request"),

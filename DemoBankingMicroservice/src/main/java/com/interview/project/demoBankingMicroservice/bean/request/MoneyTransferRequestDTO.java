@@ -8,7 +8,7 @@ public class MoneyTransferRequestDTO {
 	private String receiverName;
 	private String description;
 	private String currency;
-	private String amount;
+	private Double amount;
 	private String executionDate;
 	
 }
